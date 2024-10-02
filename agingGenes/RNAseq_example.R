@@ -52,7 +52,7 @@ download.file(URL, destfile = "/rhome/slokr001/shared/slokray/sidd_girke/agingGe
 
 URLGEN <- "https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
 download.file(URLGEN, destfile = "/rhome/slokr001/shared/slokray/sidd_girke/agingGenes/data/humanGTFprim.gtf.gz", timeout = 120)
-      
+
 #######################################################
 #### Set up targets.txt file and .param file ##########
 #######################################################
@@ -159,5 +159,32 @@ human_DEG_list2 <- filterDEGs(degDF=human_degseqDF, filter=c(Fold=2, FDR=10))
 
 
 
+#########################################
+#### Correlation analysis of samples ####
+#########################################
+library(DESeq2, warn.conflicts=FALSE, quietly=TRUE); library(ape, warn.conflicts=FALSE)
+countDFpath <- "./results/3 countDFeByg.xls"    # system.file("extdata", "countDFeByg.xls", package="systemPipeR")
+countDF <- as.matrix(read.table(countDFpath))
+colData <- data.frame(row.names=targetsin(args)$SampleName, condition=targetsin(args)$Factor)
+dds <- DESeqDataSetFromMatrix(countData = countDF, colData = colData, design = ~ condition)
+d <- cor(assay(rlog(dds)), method="spearman")
+hc <- hclust(dist(1-d))
+plot.phylo(as.phylo(hc), type="p", edge.col=4, edge.width=3, show.node.label=TRUE, no.margin=TRUE)
 
+pdf("./results/5 phylotree.pdf")
+plot.phylo(as.phylo(hc), type="p", edge.col=4, edge.width=3, show.node.label=TRUE, no.margin=TRUE)
+dev.off()
 
+#####################################################################
+#### Correlation analysis with RPKM normalized expression values ####
+#####################################################################
+rpkmDFeBygpath <- "./results/4 rpkmDFeByg.xls"  # system.file("extdata", "rpkmDFeByg.xls", package="systemPipeR")
+rpkmDFeByg <- read.table(rpkmDFeBygpath, check.names=FALSE)
+rpkmDFeByg <- rpkmDFeByg[rowMeans(rpkmDFeByg) > 50,]
+d <- cor(rpkmDFeByg, method="spearman")
+hc <- hclust(as.dist(1-d))
+plot.phylo(as.phylo(hc), type="p", edge.col="blue", edge.width=2, show.node.label=TRUE, no.margin=TRUE)
+
+pdf("./results/6 rpkmphylotree.pdf")
+plot.phylo(as.phylo(hc), type="p", edge.col="blue", edge.width=2, show.node.label=TRUE, no.margin=TRUE)
+dev.off()
