@@ -5,8 +5,8 @@ setwd(homedir)
 
 parampath <- "/rhome/slokr001/shared/slokray/param/hisat2PE.param" ##system.file("extdata", "hisathuman.param", package="systemPipeR")
 read.delim(parampath, comment.char = "#")
-targets <- read.delim("/rhome/slokr001/shared/slokray/SraRunInfo - pairedTargets.txt", comment.char ="#")
-args <- systemArgs(sysma=parampath, mytargets="/rhome/slokr001/shared/slokray/SraRunInfo - pairedTargets.txt")
+targets <- read.delim("/rhome/slokr001/shared/slokray/sidd_girke/SraRunInfo - pairedTargets.txt", comment.char ="#")
+args <- systemArgs(sysma=parampath, mytargets="/rhome/slokr001/shared/slokray/sidd_girke/SraRunInfo - pairedTargets.txt")
 args
 modules(args)
 cores(args)
@@ -18,23 +18,23 @@ normalizePath(results(args))
 
 rawCounts = read.table('./mousecountDFeByg.xls')
 
-dge <- DGEList(counts=rawCounts)
-dge = calcNormFactors(dge, method='RLE')
-rleCounts = cpm(dge, normalized.lib.sizes=TRUE)
+## dge <- DGEList(counts=rawCounts)
+## dge = calcNormFactors(dge, method='RLE')
+## rleCounts = cpm(dge, normalized.lib.sizes=TRUE)
 
 mouse_cmp <- readComp(args, format="matrix", delim="-")
-mouse_edgeDF <- run_edgeR(countDF=rleCounts, 
+mouse_edgeDF <- run_edgeR(countDF=rawCounts, 
                           targets=targetsin(args), 
                           cmp=mouse_cmp[[1]], 
                           independent=FALSE, 
                           mdsplot="")
-write.table(mouse_edgeDF, "./mouseedgeRcomp_rle.csv", 
+write.table(mouse_edgeDF, "./mouseedgeRcounts.csv", 
             quote=FALSE, sep="\t", col.names = NA)
 
 
 library(biomaRt)
 ensembl <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")
-deseq2_data = fread('mouseedgeRcomp_rle.csv')
+deseq2_data = fread('mousecount_edgeR_UDPATED.xls')
 rownames = deseq2_data[,'V1']
 gene_info <- getBM(attributes = c('ensembl_gene_id', 'external_gene_name'),
                    filters = 'ensembl_gene_id',
@@ -50,25 +50,27 @@ for (i in deseq2_data$V1) {
   }
 }
 
-fwrite(deseq2_data, 'mouseedgeRcomp_rle.csv')
+fwrite(deseq2_data, 'mouseedgeRcounts_UPDATED.csv')
 
 
 
 library(GOstats); library(GO.db)
 library(DESeq2); library(clusterProfiler); library(org.Mm.eg.db); library(GO.db); library(pathview); library(readr);library(fgsea)
 library(tidyverse)
-deseq <- read_csv('mouseedgeRcomp_rle.csv', show_col_types = FALSE)
+deseq <- read_csv('mouseedgeRcounts_UPDATED.csv', show_col_types = FALSE)
 deseq <- deseq[complete.cases(deseq), ]
-pvalColumns <- c("Control.F-Acarbose.F_PValue", "Control.M-Acarbose.M_PValue", "Control.F-CR.F_PValue", 
-                 "Control.M-CR.M_PValue", "GHRKOControl.M-GHRKO.M_PValue", "Control.F-Rapamycin.F_PValue", 
-                 "Control.M-Rapamycin.M_PValue", "SnellDwarfMiceControl.M-SnellDwarfMice.M_PValue", 
-                 "Control.F-Protandim.F_PValue", "Control.M-Protandim.M_PValue", "Control.F-alphaestradiol.F_PValue", 
-                 "Control.M-alphaestradiol.M_PValue", "MRControl.M-MethionineRestriction.M_PValue")
-statColumns <- c("Control.F-Acarbose.F_logCPM", "Control.M-Acarbose.M_logCPM", "Control.F-CR.F_logCPM", 
-                 "Control.M-CR.M_logCPM", "GHRKOControl.M-GHRKO.M_logCPM", "Control.F-Rapamycin.F_logCPM", 
-                 "Control.M-Rapamycin.M_logCPM", "SnellDwarfMiceControl.M-SnellDwarfMice.M_logCPM", 
-                 "Control.F-Protandim.F_logCPM", "Control.M-Protandim.M_logCPM", "Control.F-alphaestradiol.F_logCPM", 
-                 "Control.M-alphaestradiol.M_logCPM", "MRControl.M-MethionineRestriction.M_logCPM")
+pvalColumns <- c("Control.F.12-Acarbose.F.12_PValue", "Control.M.12-Acarbose.M.12_PValue", "Control.F.12-CR.F.12_PValue", "Control.M.12-CR.M.12_PValue", 
+                  "GHRKOControl.M-GHRKO.M_PValue", "Control.F.12-Rapamycin.F.12_PValue",  "Control.M.12-Rapamycin.M.12_PValue", 
+                  "SnellDwarfMiceControl.M-SnellDwarfMice.M_PValue", "Control.F.6-Acarbose.F.6_PValue", "Control.M.6-Acarbose.M.6_PValue", 
+                  "Control.F.6-CR.F.6_PValue", "Control.M.6-CR.M.6_PValue", "Control.F.6-Rapamycin.F.6_PValue",  "Control.M.6-Rapamycin.M.6_PValue", 
+                  "Control.F.6-Protandim.F.6_PValue", "Control.F.6-Protandim.M.6_PValue", "Control.F.6-alphaestradiol.F.6_PValue", 
+                  "Control.M.6-alphaestradiol.M.6_PValue", "MRControl.M-MethionineRestriction.M_PValue")
+statColumns <- c("Control.F.12-Acarbose.F.12_logFC", "Control.M.12-Acarbose.M.12_logFC", "Control.F.12-CR.F.12_logFC", "Control.M.12-CR.M.12_logFC", 
+                 "GHRKOControl.M-GHRKO.M_logFC", "Control.F.12-Rapamycin.F.12_logFC",  "Control.M.12-Rapamycin.M.12_logFC", 
+                 "SnellDwarfMiceControl.M-SnellDwarfMice.M_logFC", "Control.F.6-Acarbose.F.6_logFC", "Control.M.6-Acarbose.M.6_logFC", 
+                 "Control.F.6-CR.F.6_logFC", "Control.M.6-CR.M.6_logFC", "Control.F.6-Rapamycin.F.6_logFC",  "Control.M.6-Rapamycin.M.6_logFC", 
+                 "Control.F.6-Protandim.F.6_logFC", "Control.F.6-Protandim.M.6_logFC", "Control.F.6-alphaestradiol.F.6_logFC", 
+                 "Control.M.6-alphaestradiol.M.6_logFC", "MRControl.M-MethionineRestriction.M_logFC")
 tablePval <- deseq[,pvalColumns]
 for (i in 1:nrow(tablePval)) {
   rowPval <- tablePval[i, ]
@@ -126,7 +128,7 @@ out_table <- list()
 
 for (i in statColumns) {
   stats <- setNames(result_table[[i]], result_table$ENTREZID)
-  fgseaResKegg <- fgsea(pathways=reacdb, stats=stats, minSize=15, maxSize=500)
+  fgseaResKegg <- fgsea(pathways=keggdb, stats=stats, minSize=15, maxSize=500)
   print(fgseaResKegg)
   out_table[[i]] <- fgseaResKegg
 }
@@ -143,4 +145,4 @@ combined_results <- combined_results %>%
 combined_results <- combined_results %>%
   unnest(cols = everything())
 
-write.csv(combined_results, file="fgsea_reac_results_edgeR_BH.csv", row.names=FALSE)
+write.csv(combined_results, file="fgsea_kegg_edgeR.csv", row.names=FALSE)

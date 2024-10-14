@@ -62,12 +62,12 @@ download.file(URLGEN, destfile = "/rhome/slokr001/shared/slokray/data/Mus_muscul
 parampath <- "/rhome/slokr001/shared/slokray/param/hisat2PE.param" ##system.file("extdata", "hisathuman.param", package="systemPipeR")
 read.delim(parampath, comment.char = "#")
 
-targets <- read.delim("/rhome/slokr001/shared/slokray/SraRunInfo - pairedTargets.txt", comment.char ="#")
+targets <- read.delim("/rhome/slokr001/shared/slokray/sidd_girke/SraRunInfo - pairedTargets-2.txt", comment.char ="#")
 targets#[1:3,]
 
 #### Read .param file and targets.txt file into args object ####
 ################################################################
-args <- systemArgs(sysma=parampath, mytargets="/rhome/slokr001/shared/slokray/SraRunInfo - pairedTargets.txt")
+args <- systemArgs(sysma=parampath, mytargets="/rhome/slokr001/shared/slokray/sidd_girke/SraRunInfo - pairedTargets-2.txt")
 args
 modules(args)
 cores(args)
