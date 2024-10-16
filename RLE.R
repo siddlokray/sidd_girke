@@ -1,6 +1,6 @@
 library(systemPipeR);library(ShortRead);library(data.table)
 library(edgeR)
-homedir <- "/rhome/slokr001/shared/slokray"
+homedir <- "/rhome/slokr001/shared/slokray/sidd_girke"
 setwd(homedir)
 
 parampath <- "/rhome/slokr001/shared/slokray/param/hisat2PE.param" ##system.file("extdata", "hisathuman.param", package="systemPipeR")
@@ -57,8 +57,27 @@ fwrite(deseq2_data, 'mouseedgeRcounts_UPDATED.csv')
 library(GOstats); library(GO.db)
 library(DESeq2); library(clusterProfiler); library(org.Mm.eg.db); library(GO.db); library(pathview); library(readr);library(fgsea)
 library(tidyverse)
-deseq <- read_csv('mouseedgeRcounts_UPDATED.csv', show_col_types = FALSE)
+deseq <- read_csv('./csvs/mouseedgeRcounts_UPDATED.csv', show_col_types = FALSE)
 deseq <- deseq[complete.cases(deseq), ]
+treatments <- c('./csvs/individual_treatments/Control.F.12-Acarbose.F.12.csv',
+                './csvs/individual_treatments/Control.M.12-Acarbose.M.12.csv',
+                './csvs/individual_treatments/Control.F.12-CR.F.12.csv',
+                './csvs/individual_treatments/Control.M.12-CR.M.12.csv',
+                './csvs/individual_treatments/GHRKOControl.M-GHRKO.M.csv',
+                './csvs/individual_treatments/Control.F.12-Rapamycin.F.12.csv',
+                './csvs/individual_treatments/Control.M.12-Rapamycin.M.12.csv',
+                './csvs/individual_treatments/SnellDwarfMiceControl.M-SnellDwarfMice.M.csv',
+                './csvs/individual_treatments/Control.F.6-Acarbose.F.6.csv',
+                './csvs/individual_treatments/Control.M.6-Acarbose.M.6.csv',
+                './csvs/individual_treatments/Control.F.6-CR.F.6.csv',
+                './csvs/individual_treatments/Control.M.6-CR.M.6.csv',
+                './csvs/individual_treatments/Control.F.6-Rapamycin.F.6.csv',
+                './csvs/individual_treatments/Control.M.6-Rapamycin.M.6.csv',
+                './csvs/individual_treatments/Control.F.6-Protandim.F.6.csv',
+                './csvs/individual_treatments/Control.F.6-Protandim.M.6.csv',
+                './csvs/individual_treatments/Control.F.6-alphaestradiol.F.6.csv',
+                './csvs/individual_treatments/Control.M.6-alphaestradiol.M.6.csv',
+                './csvs/individual_treatments/MRControl.M-MethionineRestriction.M.csv')
 pvalColumns <- c("Control.F.12-Acarbose.F.12_PValue", "Control.M.12-Acarbose.M.12_PValue", "Control.F.12-CR.F.12_PValue", "Control.M.12-CR.M.12_PValue", 
                   "GHRKOControl.M-GHRKO.M_PValue", "Control.F.12-Rapamycin.F.12_PValue",  "Control.M.12-Rapamycin.M.12_PValue", 
                   "SnellDwarfMiceControl.M-SnellDwarfMice.M_PValue", "Control.F.6-Acarbose.F.6_PValue", "Control.M.6-Acarbose.M.6_PValue", 
@@ -78,6 +97,12 @@ for (i in 1:nrow(tablePval)) {
   tablePval$minPval[i] <- min(p.adjust(rowPval, method = "BH"))
 }
 deseq <- deseq[tablePval$minPval < 0.05, ]
+
+
+
+
+
+
 
 load_keggList <- function(org="mmu") {
   suppressMessages(suppressWarnings(library(KEGG.db))) 
@@ -117,18 +142,22 @@ load_goList <- function(ont="BP", org="mmu") {
 
 godb <- load_goList(ont="BP", org="mmu")
 
-gene_ids <- bitr(deseq$V1, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
-entrez_gene_list <- gene_ids$ENTREZID
-
-result_table <- merge(deseq, gene_ids, by.x = "V1", by.y = "SYMBOL", all.x = TRUE)
-result_table$V1 <- ifelse(is.na(result_table$ENTREZID), result_table$V1, result_table$ENTREZID)
-result_table <- result_table[complete.cases(result_table), ]
 
 out_table <- list()
 
-for (i in statColumns) {
-  stats <- setNames(result_table[[i]], result_table$ENTREZID)
-  fgseaResKegg <- fgsea(pathways=keggdb, stats=stats, minSize=15, maxSize=500)
+for (i in treatments) {
+  print(i)
+  data <- read_csv(i, show_col_types = FALSE)
+  
+  gene_ids <- bitr(data$V1, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)
+  entrez_gene_list <- gene_ids$ENTREZID
+  
+  result_table <- merge(data, gene_ids, by.x = "V1", by.y = "SYMBOL", all.x = TRUE)
+  result_table$V1 <- ifelse(is.na(result_table$ENTREZID), result_table$V1, result_table$ENTREZID)
+  result_table <- result_table[complete.cases(result_table), ]
+  
+  stats <- setNames(result_table[[2]], result_table$ENTREZID)
+  fgseaResKegg <- fgsea(pathways=godb, stats=stats, minSize=15, maxSize=500)
   print(fgseaResKegg)
   out_table[[i]] <- fgseaResKegg
 }
@@ -145,4 +174,4 @@ combined_results <- combined_results %>%
 combined_results <- combined_results %>%
   unnest(cols = everything())
 
-write.csv(combined_results, file="fgsea_kegg_edgeR.csv", row.names=FALSE)
+write.csv(combined_results, file="./csvs/fgsea_go_edgeR_individual.csv", row.names=FALSE)
